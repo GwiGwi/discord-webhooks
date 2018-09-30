@@ -9,23 +9,27 @@
 
 	$JsonPayload = file_get_contents('php://input');
 	$JsonObject = json_decode($JsonPayload);
-	$UserName = $JsonObject->{"actor"}->{"username"};
-	$Repository = $JsonObject->{"repository"}->{"name"};
-	$Project = $JsonObject->{"project"}->{"name"};
 	
-	if ($JsonObject != null && $JsonObject->{"push"} != null)
+	if ($JsonObject != null)
 	{
-		$Changes = $JsonObject->{"push"}->{"changes"}[0];
-		$Commits = $Changes->{"commits"};
+		$UserName = $JsonObject->{"actor"}->{"username"};
+		$Repository = $JsonObject->{"repository"}->{"name"};
+		$Project = $JsonObject->{"project"}->{"name"};
 		
-		foreach ($Commits as $Commit)
+		if ($JsonObject->{"push"} != null)
 		{
-			$CommitStr = $CommitStr . "- " . $Commit->{"message"} . " [" . $Commit->{"date"} . "]\n";
+			$Changes = $JsonObject->{"push"}->{"changes"}[0];
+			$Commits = $Changes->{"commits"};
+			
+			foreach ($Commits as $Commit)
+			{
+				$CommitStr = $CommitStr . "- " . $Commit->{"message"} . "\n";
+			}
+			
+			$webhook = new Client(Config::$TargetDiscordUrl);
+			$embed = new Embed();
+			$embed->description($CommitStr);
+			$webhook->message($Repository . " : New push by " . $UserName)->embed($embed)->send();
 		}
-		
-		$webhook = new Client(Config::$TargetDiscordUrl);
-		$embed = new Embed();
-		$embed->description($CommitStr);
-		$webhook->message($Repository . " : New push by " . $UserName)->embed($embed)->send();
 	}
  ?>
